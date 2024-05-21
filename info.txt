@@ -1,0 +1,186 @@
+import telebot
+from currency_converter import CurrencyConverter
+from telebot import types
+
+
+
+bot=telebot.TeleBot('6067689178:AAFe47z6gqKFTgEPCHBSYkQxxc-YP1de0ks')
+currency=CurrencyConverter()
+
+amount=0
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, 'howdy, enter summ')
+    bot.register_next_step_handler(message, summ)
+
+
+
+def summ(message):
+    global amount
+
+
+    try:
+        amount=int(message.text.strip())
+    except ValueError:
+        bot.send_message(message.chat.id, 'only digits')
+        bot.register_next_step_handler(message, summ)
+        # if we write return and he entered letters then we dont execute code above
+        return
+
+    if amount>0:
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        btn1 = types.InlineKeyboardButton('USD/EUR', callback_data='usd/eur')
+        btn2 = types.InlineKeyboardButton('EUR/USD', callback_data='eur/usd')
+        btn3 = types.InlineKeyboardButton('USD/GBP', callback_data='usd/gbp')
+        btn4 = types.InlineKeyboardButton('another', callback_data='else')
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(message.chat.id, 'enter currency', reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, 'must be more than 0')
+        bot.register_next_step_handler(message, summ)
+
+
+
+@bot.callback_query_handler(func=lambda call:True)
+def callback(call):
+    if call.data!='else':
+        values=call.data.upper().split('/')
+        res=currency.convert(amount, values[0], values[1])
+        bot.send_message(call.message.chat.id, f'result: {round(res, 2)}. one more time, plz')
+        bot.register_next_step_handler(call.message, summ)
+    else:
+        bot.send_message(call.message.chat.id, 'enter pair of currency using "/"')
+        bot.register_next_step_handler(call.message, my_currency)
+
+
+def my_currency(message):
+    try:
+        values = message.text.upper().split('/')
+        res = currency.convert(amount, values[0], values[1])
+        bot.send_message(message.chat.id, f'result: {round(res, 2)}. one more time, plz')
+        bot.register_next_step_handler(message, summ)
+
+    #Exception====== any exception, any!!!!
+    except Exception:
+        bot.send_message(message.chat.id, 'enter correct currencies using "/"')
+        bot.register_next_step_handler(message, summ)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bot.polling(none_stop=True)
+
+
+
+------
+
+
+
+
+#https://openweathermap.org
+#pip install requests+import requests
+
+
+
+import telebot
+import requests
+import json
+import math
+from currency_converter import CurrencyConverter
+from telebot import types
+
+
+
+bot=telebot.TeleBot('6067689178:AAFe47z6gqKFTgEPCHBSYkQxxc-YP1de0ks')
+API='7f061594b3629ab634fd104c5c98f852'
+
+currency = CurrencyConverter()
+
+amount = 0
+
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, 'howdy, enter city name please:')
+
+@bot.message_handler(content_types=['text'])
+def getWeather(message):
+    city=message.text.strip().lower()
+    res=requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API}&units=metric')
+    if res.status_code==200:
+        data=json.loads(res.text)
+        temp=math.trunc(data["main"]["temp"])
+        bot.reply_to(message, f'now the weather is: {temp}')
+
+        image='sun.png' if temp>15.0 else 'cloud.png'
+        file=open('./img/'+image, 'rb')
+        bot.send_photo(message.chat.id, file)
+    else:
+        bot.reply_to(message, f'no such city')
+
+
+
+    @bot.message_handler(commands=['currency'])
+    def start(message):
+        bot.send_message(message.chat.id, 'howdy, enter summ')
+        bot.register_next_step_handler(message, summ)
+
+    def summ(message):
+        global amount
+
+        try:
+            amount = int(message.text.strip())
+        except ValueError:
+            bot.send_message(message.chat.id, 'only digits')
+            bot.register_next_step_handler(message, summ)
+            # if we write return and he entered letters then we dont execute code above
+            return
+
+        if amount > 0:
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            btn1 = types.InlineKeyboardButton('USD/EUR', callback_data='usd/eur')
+            btn2 = types.InlineKeyboardButton('EUR/USD', callback_data='eur/usd')
+            btn3 = types.InlineKeyboardButton('USD/GBP', callback_data='usd/gbp')
+            btn4 = types.InlineKeyboardButton('another', callback_data='else')
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(message.chat.id, 'enter currency', reply_markup=markup)
+        else:
+            bot.send_message(message.chat.id, 'must be more than 0')
+            bot.register_next_step_handler(message, summ)
+
+    @bot.callback_query_handler(func=lambda call: True)
+    def callback(call):
+        if call.data != 'else':
+            values = call.data.upper().split('/')
+            res = currency.convert(amount, values[0], values[1])
+            bot.send_message(call.message.chat.id, f'result: {round(res, 2)}. one more time, plz')
+            bot.register_next_step_handler(call.message, summ)
+        else:
+            bot.send_message(call.message.chat.id, 'enter pair of currency using "/"')
+            bot.register_next_step_handler(call.message, my_currency)
+
+    def my_currency(message):
+        try:
+            values = message.text.upper().split('/')
+            res = currency.convert(amount, values[0], values[1])
+            bot.send_message(message.chat.id, f'result: {round(res, 2)}. one more time, plz')
+            bot.register_next_step_handler(message, summ)
+
+        # Exception====== any exception, any!!!!
+        except Exception:
+            bot.send_message(message.chat.id, 'enter correct currencies using "/"')
+            bot.register_next_step_handler(message, summ)
+
+
+bot.polling(none_stop=True)
